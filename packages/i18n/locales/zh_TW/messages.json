@@ -959,5 +959,23 @@
         "example": "Option not found"
       }
     }
+  },
+  "options_general_allowSubmit": {
+    "message": "允許提交（Gate-D）"
+  },
+  "options_general_allowSubmit_desc": {
+    "message": "預設關閉。關閉時，智慧代理無法點擊提交/傳送/購買類按鈕，也無法按 Enter 提交表單。"
+  },
+  "options_general_recall_header": {
+    "message": "Recall 記憶"
+  },
+  "options_general_recall_desc": {
+    "message": "從 Recall 設定 → API & MCP 貼上唯讀 API 金鑰。為空時停用記憶檢索。"
+  },
+  "options_general_recall_key": {
+    "message": "Recall 唯讀 API 金鑰"
+  },
+  "options_general_save": {
+    "message": "儲存"
   }
 }

@@ -254,11 +254,10 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
           <div className="flex items-center justify-between">
             <div>
               <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                Allow submissions (Gate-D)
+                {t('options_general_allowSubmit')}
               </h3>
               <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Off by default. While off, the agent is blocked from clicking Submit/Send/Buy-style buttons or pressing
-                Enter to submit forms.
+                {t('options_general_allowSubmit_desc')}
               </p>
             </div>
             <div className="relative inline-flex cursor-pointer items-center">
@@ -272,7 +271,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
               <label
                 htmlFor="allowSubmit"
                 className={`peer h-6 w-11 rounded-full ${isDarkMode ? 'bg-slate-600' : 'bg-gray-200'} after:absolute after:left-[2px] after:top-[2px] after:size-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300`}>
-                <span className="sr-only">Allow submissions</span>
+                <span className="sr-only">{t('options_general_allowSubmit')}</span>
               </label>
             </div>
           </div>
@@ -282,14 +281,14 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
       <div
         className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-white'} p-6 text-left shadow-sm`}>
         <h2 className={`text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          Recall Memory
+          {t('options_general_recall_header')}
         </h2>
         <p className={`mt-1 text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Paste a read-only API key from Recall Settings → API &amp; MCP. Memory grounding is disabled while empty.
+          {t('options_general_recall_desc')}
         </p>
         <div className="mt-4 flex items-center gap-3">
           <label htmlFor="recallToken" className="sr-only">
-            Recall read-only API key
+            {t('options_general_recall_key')}
           </label>
           <input
             id="recallToken"
@@ -305,7 +304,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
             theme={isDarkMode ? 'dark' : 'light'}
             disabled={recallToken === savedRecallToken}
             onClick={saveRecallToken}>
-            Save
+            {t('options_general_save')}
           </Button>
         </div>
       </div>

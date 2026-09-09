@@ -31,7 +31,9 @@ interface RecallSearchResponse {
 
 function trimmed(value: unknown, max: number): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const text = value.trim();
+  // collapse whitespace runs: card text must not carry newlines that could
+  // spoof our citation delimiters inside the untrusted context block
+  const text = value.replace(/\s+/g, ' ').trim();
   if (!text) return undefined;
   return text.slice(0, max);
 }
