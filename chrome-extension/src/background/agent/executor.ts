@@ -7,6 +7,7 @@ import { NavigatorPrompt } from './prompts/navigator';
 import { PlannerPrompt } from './prompts/planner';
 import { createLogger } from '@src/background/log';
 import MessageManager from './messages/service';
+import { getRecallContext } from './recall';
 import type BrowserContext from '../browser/context';
 import { ActionBuilder } from './actions/builder';
 import { EventManager } from './event/manager';
@@ -43,6 +44,7 @@ export class Executor {
   private readonly navigatorPrompt: NavigatorPrompt;
   private readonly generalSettings: GeneralSettingsConfig | undefined;
   private tasks: string[] = [];
+  private taskMessagesInitialized = false;
   constructor(
     task: string,
     taskId: string,
@@ -85,8 +87,18 @@ export class Executor {
     });
 
     this.context = context;
-    // Initialize message history
-    this.context.messageManager.initTaskMessages(this.navigatorPrompt.getSystemMessage(), task);
+  }
+
+  private async initializeTaskMessages(): Promise<void> {
+    if (this.taskMessagesInitialized) return;
+
+    const task = this.tasks[0];
+    this.context.messageManager.initTaskMessages(
+      this.navigatorPrompt.getSystemMessage(),
+      task,
+      await getRecallContext(task),
+    );
+    this.taskMessagesInitialized = true;
   }
 
   subscribeExecutionEvents(callback: EventCallback): void {
@@ -126,6 +138,7 @@ export class Executor {
    * @returns {Promise<void>}
    */
   async execute(): Promise<void> {
+    await this.initializeTaskMessages();
     logger.info(`🚀 Executing task: ${this.tasks[this.tasks.length - 1]}`);
     // reset the step counter
     const context = this.context;
@@ -373,6 +386,7 @@ export class Executor {
     skipFailures = true,
     delayBetweenActions = 2.0,
   ): Promise<ActionResult[]> {
+    await this.initializeTaskMessages();
     const results: ActionResult[] = [];
     const replayLogger = createLogger('Executor:replayHistory');
 
