@@ -21,6 +21,7 @@ import { type BrowserContextConfig, DEFAULT_BROWSER_CONTEXT_CONFIG, type PageSta
 import { createLogger } from '@src/background/log';
 import { ClickableElementProcessor } from './dom/clickable/service';
 import { isUrlAllowed } from './util';
+import { SecurityGuardrails } from '@src/background/services/guardrails';
 
 const logger = createLogger('Page');
 
@@ -730,6 +731,9 @@ export default class Page {
     const modifiers = keyParts.slice(0, -1);
     const mainKey = keyParts[keyParts.length - 1];
 
+    if (this._convertKey(mainKey) === 'Enter' && modifiers.length === 0) {
+      await this._assertSubmitAllowed({ enterKey: true });
+    }
     // Press modifiers and main key, ensure modifiers are released even if an error occurs.
     try {
       // Press all modifier keys (e.g., Control, Shift, etc.)
@@ -1131,6 +1135,7 @@ export default class Page {
 
       // Get element properties to determine input method
       const tagName = await element.evaluate(el => el.tagName.toLowerCase());
+      await this._assertSubmitAllowed({ tag: tagName, enterKey: text.includes('\n') });
       const isContentEditable = await element.evaluate(el => {
         if (el instanceof HTMLElement) {
           return el.isContentEditable;
@@ -1282,6 +1287,48 @@ export default class Page {
     }
   }
 
+  /**
+   * Gate-D: refuse outbound submissions (Enter-to-submit, submit inputs, transactional
+   * buttons) unless the operator armed "Allow submissions" in Options > General.
+   */
+  private async _assertSubmitAllowed(signal: {
+    tag?: string;
+    type?: string;
+    text?: string;
+    role?: string;
+    enterKey?: boolean;
+  }): Promise<void> {
+    const { allowSubmit } = await chrome.storage.local.get(['allowSubmit']);
+    const verdict = SecurityGuardrails.checkSubmit(signal, allowSubmit === true);
+    if (verdict.blocked) {
+      logger.warn(`Gate-D: submission blocked (${verdict.reason})`);
+      throw new Error(
+        `Gate-D: submission blocked (${verdict.reason}). Enable "Allow submissions" in Options > General to arm outbound submits.`,
+      );
+    }
+  }
+
+  private _clickSubmitSignal(elementNode: DOMElementNode): {
+    tag?: string;
+    type?: string;
+    text?: string;
+    role?: string;
+  } {
+    const attributes = elementNode.attributes;
+    // biome-ignore lint/complexity/useLiteralKeys: attributes may be a proxied record
+    const type = attributes['type'];
+    // biome-ignore lint/complexity/useLiteralKeys: attributes may be a proxied record
+    const role = attributes['role'];
+    // biome-ignore lint/complexity/useLiteralKeys: attributes may be a proxied record
+    const ariaLabel = attributes['aria-label'] || '';
+    return {
+      tag: elementNode.tagName,
+      type,
+      role,
+      text: `${ariaLabel} ${elementNode.getAllTextTillNextClickableElement()}`.trim(),
+    };
+  }
+
   async clickElementNode(useVision: boolean, elementNode: DOMElementNode): Promise<void> {
     if (!this._puppeteerPage) {
       throw new Error('Puppeteer is not connected');
@@ -1300,6 +1347,7 @@ export default class Page {
 
       // Scroll element into view if needed
       await this._scrollIntoViewIfNeeded(element);
+      await this._assertSubmitAllowed(this._clickSubmitSignal(elementNode));
 
       try {
         // First attempt: Use Puppeteer's click method with timeout

@@ -165,6 +165,39 @@ export class SecurityGuardrails {
   validateStrict(content: string): ValidationResult {
     return this.validate(content, { strict: true });
   }
+
+  /**
+   * Gate-D submission guard — pure decision, no I/O.
+   * Outbound interactions (Enter-to-submit, input[type=submit], buttons whose label
+   * is a transactional verb) are blocked unless the operator explicitly armed submits.
+   */
+  static readonly SUBMIT_ACTION_PATTERN =
+    /\b(submit|apply|send|publish|post|buy|order|pay|checkout|confirm|register|enroll|sign\s?up|book)\b/i;
+
+  static checkSubmit(
+    signal: { tag?: string; type?: string; text?: string; role?: string; enterKey?: boolean },
+    allowSubmit: boolean,
+  ): { dangerous: boolean; blocked: boolean; reason?: string } {
+    const reasons: string[] = [];
+    if (signal.enterKey) {
+      reasons.push('enter-key submission');
+    }
+    if ((signal.type || '').toLowerCase() === 'submit') {
+      reasons.push('input[type=submit]');
+    }
+    const tag = (signal.tag || '').toLowerCase();
+    const role = (signal.role || '').toLowerCase();
+    const isActionable = tag === 'button' || tag === 'a' || tag === 'input' || role === 'button' || role === 'link';
+    const text = (signal.text || '').trim();
+    if (isActionable && SecurityGuardrails.SUBMIT_ACTION_PATTERN.test(text)) {
+      reasons.push(`action control "${text.slice(0, 60)}"`);
+    }
+    const dangerous = reasons.length > 0;
+    if (dangerous && !allowSubmit) {
+      return { dangerous: true, blocked: true, reason: reasons.join(', ') };
+    }
+    return { dangerous, blocked: false };
+  }
 }
 
 // Export everything for direct use
