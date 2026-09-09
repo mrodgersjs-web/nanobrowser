@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type GeneralSettingsConfig, generalSettingsStore, DEFAULT_GENERAL_SETTINGS } from '@extension/storage';
+import { Button } from '@extension/ui';
 import { t } from '@extension/i18n';
 
 interface GeneralSettingsProps {
@@ -8,10 +9,17 @@ interface GeneralSettingsProps {
 
 export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) => {
   const [settings, setSettings] = useState<GeneralSettingsConfig>(DEFAULT_GENERAL_SETTINGS);
+  const [recallToken, setRecallToken] = useState('');
+  const [savedRecallToken, setSavedRecallToken] = useState('');
 
   useEffect(() => {
     // Load initial settings
     generalSettingsStore.getSettings().then(setSettings);
+    chrome.storage.local.get(['recallToken']).then(({ recallToken: storedRecallToken }) => {
+      const token = typeof storedRecallToken === 'string' ? storedRecallToken : '';
+      setRecallToken(token);
+      setSavedRecallToken(token);
+    });
   }, []);
 
   const updateSetting = async <K extends keyof GeneralSettingsConfig>(key: K, value: GeneralSettingsConfig[K]) => {
@@ -25,6 +33,11 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
     // fetch the latest settings from the store and update the local state again to ensure UI consistency.
     const latestSettings = await generalSettingsStore.getSettings();
     setSettings(latestSettings);
+  };
+
+  const saveRecallToken = async () => {
+    await chrome.storage.local.set({ recallToken });
+    setSavedRecallToken(recallToken);
   };
 
   return (
@@ -228,6 +241,37 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
               </label>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-white'} p-6 text-left shadow-sm`}>
+        <h2 className={`text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+          Recall Memory
+        </h2>
+        <p className={`mt-1 text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Paste a read-only API key from Recall Settings → API &amp; MCP. Memory grounding is disabled while empty.
+        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <label htmlFor="recallToken" className="sr-only">
+            Recall read-only API key
+          </label>
+          <input
+            id="recallToken"
+            type="password"
+            autoComplete="off"
+            placeholder="sk_..."
+            value={recallToken}
+            onChange={e => setRecallToken(e.target.value)}
+            className={`min-w-0 flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
+          />
+          <Button
+            type="button"
+            theme={isDarkMode ? 'dark' : 'light'}
+            disabled={recallToken === savedRecallToken}
+            onClick={saveRecallToken}>
+            Save
+          </Button>
         </div>
       </div>
     </section>
