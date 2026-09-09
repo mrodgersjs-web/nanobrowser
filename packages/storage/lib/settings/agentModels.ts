@@ -54,10 +54,23 @@ function validateModelConfig(config: ModelConfig) {
     throw new Error('Provider and model name must be specified');
   }
 }
-
 function getModelParameters(agent: AgentNameEnum, provider: string): Record<string, unknown> {
   const providerParams = llmProviderParameters[provider as keyof typeof llmProviderParameters]?.[agent];
   return providerParams ?? { temperature: 0.1, topP: 0.1 };
+}
+
+export function normalizeModelConfig(config: ModelConfig): ModelConfig {
+  // Legacy stubborn profile settings persist the knob as `parameters.reasoning_Effort` —
+  // while `createOpenAIChatModel` only reads the top-level `reasoningEffort`. Promote the observed shape
+  // to the field that is read, so that old profiles operate completely.
+  const legacy = config.parameters?.reasoning_Effort ?? config.parameters?.reasoning_effort;
+  if (config.reasoningEffort === undefined && legacy !== undefined) {
+    const effort = (['minimal', 'low', 'medium', 'high'] as const).find(v => v === String(legacy)) ?? undefined;
+    const { reasoning_Effort, reasoning_effort, ...restParams } = config.parameters ?? {};
+    if (effort === undefined) return config;
+    return { ...config, reasoningEffort: effort, parameters: restParams };
+  }
+  return config;
 }
 
 export const agentModelStore: AgentModelStorage = {
@@ -87,13 +100,13 @@ export const agentModelStore: AgentModelStorage = {
 
     // Merge default parameters with stored parameters
     const defaultParams = getModelParameters(agent, config.provider);
-    return {
+    return normalizeModelConfig({
       ...config,
       parameters: {
         ...defaultParams,
         ...config.parameters,
       },
-    };
+    });
   },
   resetAgentModel: async (agent: AgentNameEnum) => {
     await storage.set(current => {
@@ -119,7 +132,7 @@ export const agentModelStore: AgentModelStorage = {
     const filteredAgents: Partial<Record<AgentNameEnum, ModelConfig>> = {};
     for (const [agentKey, config] of Object.entries(data.agents)) {
       if (agentKey !== 'validator' && Object.values(AgentNameEnum).includes(agentKey as AgentNameEnum)) {
-        filteredAgents[agentKey as AgentNameEnum] = config;
+        filteredAgents[agentKey as AgentNameEnum] = normalizeModelConfig(config);
       }
     }
     return filteredAgents as Record<AgentNameEnum, ModelConfig>;

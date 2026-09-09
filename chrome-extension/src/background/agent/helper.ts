@@ -104,7 +104,7 @@ function createOpenAIChatModel(
     // Configuration should align with ClientOptions from @langchain/openai
     configuration?: Record<string, unknown>;
     modelKwargs?: {
-      max_completion_tokens: number;
+      max_completion_tokens?: number;
       reasoning_effort?: 'none' | 'minimal' | 'low' | 'medium' | 'high';
     };
     topP?: number;
@@ -129,24 +129,27 @@ function createOpenAIChatModel(
     args.apiKey = providerConfig.apiKey;
   }
 
-  // O series models have different parameters
-  // O series models + custom OpenAI-compatible endpoints (Blackwell flash lane) have different parameters
-  const customReasoningProvider =
-    providerConfig.type === ProviderTypeEnum.CustomOpenAI && !!modelConfig.reasoningEffort;
-  if (isOpenAIReasoningModel(modelConfig.modelName) || customReasoningProvider) {
+  // O-series / GPT-5 native models keep their own reasoning schema (no sampling params).
+  const nativeReasoningModel = isOpenAIReasoningModel(modelConfig.modelName);
+  if (nativeReasoningModel) {
     args.modelKwargs = {
       max_completion_tokens: maxTokens,
     };
-
     // Add reasoning_effort parameter for o-series models if specified
     if (modelConfig.reasoningEffort) {
       // if it's gpt-5.1, we need to convert minimal to none, it doesn't support minimal
-      if (modelConfig.modelName.includes('gpt-5.1') && modelConfig.reasoningEffort === 'minimal') {
-        args.modelKwargs.reasoning_effort = 'none';
-      } else {
-        args.modelKwargs.reasoning_effort = modelConfig.reasoningEffort;
-      }
+      args.modelKwargs.reasoning_effort =
+        modelConfig.modelName.includes('gpt-5.1') && modelConfig.reasoningEffort === 'minimal'
+          ? 'none'
+          : modelConfig.reasoningEffort;
     }
+  } else if (modelConfig.reasoningEffort) {
+    // Explicit opt-in for ChatOpenAI-compatible models (e.g. local Qwen flash lanes):
+    // keep the usual sampling parameters and expose the knob via modelKwargs.
+    args.topP = (modelConfig.parameters?.topP ?? 0.1) as number;
+    args.temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
+    args.maxTokens = maxTokens;
+    args.modelKwargs = { reasoning_effort: modelConfig.reasoningEffort };
   } else {
     args.topP = (modelConfig.parameters?.topP ?? 0.1) as number;
     args.temperature = (modelConfig.parameters?.temperature ?? 0.1) as number;
