@@ -1,7 +1,7 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { AgentNameEnum, llmProviderParameters } from './types';
+import { AgentNameEnum, DEFAULT_FLASH_MODEL, DEFAULT_FLASH_PROVIDER_ID, llmProviderParameters } from './types';
 
 // Interface for a single model configuration
 export interface ModelConfig {
@@ -29,7 +29,20 @@ export type AgentModelStorage = BaseStorage<AgentModelRecord> & {
 
 const storage = createStorage<AgentModelRecord>(
   'agent-models',
-  { agents: {} as Record<AgentNameEnum, ModelConfig> },
+  {
+    agents: {
+      [AgentNameEnum.Planner]: {
+        provider: DEFAULT_FLASH_PROVIDER_ID,
+        modelName: DEFAULT_FLASH_MODEL,
+        parameters: { reasoning_Effort: 'low' },
+      },
+      [AgentNameEnum.Navigator]: {
+        provider: DEFAULT_FLASH_PROVIDER_ID,
+        modelName: DEFAULT_FLASH_MODEL,
+        parameters: { reasoning_Effort: 'low' },
+      },
+    },
+  },
   {
     storageEnum: StorageEnum.Local,
     liveUpdate: true,

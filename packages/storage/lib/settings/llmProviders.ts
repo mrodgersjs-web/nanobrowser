@@ -1,7 +1,20 @@
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
-import { type AgentNameEnum, llmProviderModelNames, llmProviderParameters, ProviderTypeEnum } from './types';
+import {
+  DEFAULT_FLASH_BASE_URL,
+  DEFAULT_FLASH_MODEL,
+  DEFAULT_FLASH_PROVIDER_ID,
+  DEFAULT_FLASH_PROVIDER_NAME,
+  DEFAULT_LOCAL_BASE_URL,
+  DEFAULT_LOCAL_MODEL,
+  DEFAULT_LOCAL_PROVIDER_ID,
+  DEFAULT_LOCAL_PROVIDER_NAME,
+  type AgentNameEnum,
+  llmProviderModelNames,
+  llmProviderParameters,
+  ProviderTypeEnum,
+} from './types';
 
 const AZURE_API_VERSION = '2025-04-01-preview';
 
@@ -36,7 +49,24 @@ export type LLMProviderStorage = BaseStorage<LLMKeyRecord> & {
 // use "llm-api-keys" as the key for the storage, for backward compatibility
 const storage = createStorage<LLMKeyRecord>(
   'llm-api-keys',
-  { providers: {} },
+  {
+    providers: {
+      [DEFAULT_LOCAL_PROVIDER_ID]: {
+        apiKey: 'local-no-key-needed',
+        baseUrl: DEFAULT_LOCAL_BASE_URL,
+        modelNames: [DEFAULT_LOCAL_MODEL],
+        name: DEFAULT_LOCAL_PROVIDER_NAME,
+        type: ProviderTypeEnum.CustomOpenAI,
+      },
+      [DEFAULT_FLASH_PROVIDER_ID]: {
+        apiKey: 'local-no-key-needed',
+        baseUrl: DEFAULT_FLASH_BASE_URL,
+        modelNames: [DEFAULT_FLASH_MODEL],
+        name: DEFAULT_FLASH_PROVIDER_NAME,
+        type: ProviderTypeEnum.CustomOpenAI,
+      },
+    },
+  },
   {
     storageEnum: StorageEnum.Local,
     liveUpdate: true,

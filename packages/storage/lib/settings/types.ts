@@ -22,6 +22,15 @@ export enum ProviderTypeEnum {
   CustomOpenAI = 'custom_openai',
 }
 
+export const DEFAULT_LOCAL_PROVIDER_ID = 'custom_openai_1';
+export const DEFAULT_LOCAL_PROVIDER_NAME = 'Blackwell';
+export const DEFAULT_LOCAL_BASE_URL = 'http://127.0.0.1:8656/v1';
+export const DEFAULT_LOCAL_MODEL = 'blackwell-qwen38-uncensored';
+export const DEFAULT_FLASH_PROVIDER_ID = 'custom_openai_2';
+export const DEFAULT_FLASH_PROVIDER_NAME = 'Blackwell Flash';
+export const DEFAULT_FLASH_BASE_URL = 'http://192.168.68.90:8011/v1';
+export const DEFAULT_FLASH_MODEL = 'blackwell-qwen38-flash';
+
 // Default supported models for each built-in provider
 export const llmProviderModelNames = {
   [ProviderTypeEnum.OpenAI]: [
