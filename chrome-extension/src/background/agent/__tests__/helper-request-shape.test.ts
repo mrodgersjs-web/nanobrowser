@@ -40,6 +40,15 @@ test('legacy nested reasoning_Effort stores get projected onto the top-level kno
     parameters: { temperature: 0.1 },
   });
   expect(modern.reasoningEffort).toBe('low');
+  // mixed shape: valid top-level value wins; the stale nested knob is stripped from parameters
+  const mixed = normalizeModelConfig({
+    provider: 'custom_openai_2',
+    modelName: 'blackwell-qwen38-flash',
+    reasoningEffort: 'high',
+    parameters: { temperature: 0.1, reasoning_Effort: 'low' },
+  });
+  expect(mixed.reasoningEffort).toBe('high');
+  expect(mixed.parameters).toStrictEqual({ temperature: 0.1 });
   expect(modern.parameters).toStrictEqual({ temperature: 0.1 });
 });
 
@@ -107,11 +116,13 @@ describe('createChatModel request shape (custom OpenAI endpoints)', () => {
     });
     await model.invoke('hello');
     const req = lastRequest();
+    // Observed on the wire (verified via capture dump): LangChain's o-series native branch omits
+    // the sampling params; the token cap still goes on the wire as max_completion_tokens via modelKwargs.
     expect(req.reasoning_effort).toBe('low');
     expect(req.temperature).toBeUndefined();
-    // Observed on the wire (verified via dump): LangChain's o-series native branch omits both
-    // the sampling params and the token-cap field; only model + reasoning_effort are sent.
     expect(req.top_p).toBeUndefined();
+    // native branch keeps the token cap on the wire (via modelKwargs -> max_completion_tokens)
+    expect(req.max_completion_tokens).toBe(4096);
   });
 
   it('holds mapping minimal to none for gpt-5.1', async () => {
@@ -124,5 +135,6 @@ describe('createChatModel request shape (custom OpenAI endpoints)', () => {
     await model.invoke('hello');
     const req = lastRequest();
     expect(req.reasoning_effort).toBe('none');
+    expect(req.max_completion_tokens).toBe(4096);
   });
 });

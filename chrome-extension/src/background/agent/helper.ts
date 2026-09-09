@@ -132,9 +132,9 @@ function createOpenAIChatModel(
   // O-series / GPT-5 native models keep their own reasoning schema (no sampling params).
   const nativeReasoningModel = isOpenAIReasoningModel(modelConfig.modelName);
   if (nativeReasoningModel) {
-    args.modelKwargs = {
-      max_completion_tokens: maxTokens,
-    };
+    // Token cap goes on the wire as max_completion_tokens via the native client param.
+    args.maxTokens = maxTokens;
+    args.modelKwargs = {};
     // Add reasoning_effort parameter for o-series models if specified
     if (modelConfig.reasoningEffort) {
       // if it's gpt-5.1, we need to convert minimal to none, it doesn't support minimal

@@ -62,13 +62,18 @@ function getModelParameters(agent: AgentNameEnum, provider: string): Record<stri
 export function normalizeModelConfig(config: ModelConfig): ModelConfig {
   // Legacy stubborn profile settings persist the knob as `parameters.reasoning_Effort` —
   // while `createOpenAIChatModel` only reads the top-level `reasoningEffort`. Promote the observed shape
-  // to the field that is read, so that old profiles operate completely.
-  const legacy = config.parameters?.reasoning_Effort ?? config.parameters?.reasoning_effort;
-  if (config.reasoningEffort === undefined && legacy !== undefined) {
-    const effort = (['minimal', 'low', 'medium', 'high'] as const).find(v => v === String(legacy)) ?? undefined;
-    const { reasoning_Effort, reasoning_effort, ...restParams } = config.parameters ?? {};
-    if (effort === undefined) return config;
-    return { ...config, reasoningEffort: effort, parameters: restParams };
+  // to the field that is read, so that old profiles operate completely. A valid top-level value always
+  // wins; regardless, the stale knob never flows into the provider parameters again.
+  const { reasoning_Effort, reasoning_effort, ...restParams } = config.parameters ?? {};
+  const legacy = reasoning_Effort ?? reasoning_effort;
+  if (legacy !== undefined) {
+    if (config.reasoningEffort !== undefined) {
+      return { ...config, parameters: restParams };
+    }
+    const effort = (['minimal', 'low', 'medium', 'high'] as const).find(v => v === String(legacy));
+    return effort !== undefined
+      ? { ...config, reasoningEffort: effort, parameters: restParams }
+      : { ...config, parameters: restParams };
   }
   return config;
 }
