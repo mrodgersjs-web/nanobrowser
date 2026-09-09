@@ -130,7 +130,10 @@ function createOpenAIChatModel(
   }
 
   // O series models have different parameters
-  if (isOpenAIReasoningModel(modelConfig.modelName)) {
+  // O series models + custom OpenAI-compatible endpoints (Blackwell flash lane) have different parameters
+  const customReasoningProvider =
+    providerConfig.type === ProviderTypeEnum.CustomOpenAI && !!modelConfig.reasoningEffort;
+  if (isOpenAIReasoningModel(modelConfig.modelName) || customReasoningProvider) {
     args.modelKwargs = {
       max_completion_tokens: maxTokens,
     };

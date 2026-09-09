@@ -34,12 +34,12 @@ const storage = createStorage<AgentModelRecord>(
       [AgentNameEnum.Planner]: {
         provider: DEFAULT_FLASH_PROVIDER_ID,
         modelName: DEFAULT_FLASH_MODEL,
-        parameters: { reasoning_Effort: 'low' },
+        reasoningEffort: 'low',
       },
       [AgentNameEnum.Navigator]: {
         provider: DEFAULT_FLASH_PROVIDER_ID,
         modelName: DEFAULT_FLASH_MODEL,
-        parameters: { reasoning_Effort: 'low' },
+        reasoningEffort: 'low',
       },
     },
   },
